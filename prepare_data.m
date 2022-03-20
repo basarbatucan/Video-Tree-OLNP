@@ -29,8 +29,9 @@ frame_n = data.frame_n';
 image_paths = data.ori_im_path';
 
 % save actual data
-x = zeros(N, 32);
-for i=1:32
+x = zeros(N, 33);
+% 32 latent variables + 1 spnr
+for i=1:33
     x(:,i) = data.(features{k-1+i})';
 end
 y = data.label';

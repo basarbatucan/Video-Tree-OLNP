@@ -3,7 +3,7 @@ close all
 clc
 
 % Define pipeline variables
-video_set_name = 'ucsdped2.mat';
+video_set_name = 'UCSDped2_dae.mat';
 input_data_dir = ['./data/processed/',video_set_name];
 input_meta_data_dir = ['./data/processed/meta_',video_set_name];
 
@@ -12,9 +12,9 @@ test_size = 0.15;
 augmentation_size = 150e3;
 test_repeat = 100;
 cross_val_MC = 8;
-max_x = 360;
-max_y = 240;
-tfpr = 0.1;
+max_x = 360; % you should select the correct x size and y size
+max_y = 240; % space partitioning is done based on this
+tfpr = 0.01;
 
 % Define model hyper-parameter space
 hyperparams.eta_init = 0.01;
