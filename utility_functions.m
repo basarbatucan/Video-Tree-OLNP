@@ -3,30 +3,61 @@ classdef utility_functions
     methods (Static)
         
         % common functions
+        function [new_train_valid_test] = update_train_valid_test(train_valid_test)
+            
+            % get the indices
+            train_index = strcmp(train_valid_test,'train');
+            valid_index = strcmp(train_valid_test,'valid');
+            train_n = sum(train_index);
+            valid_n = sum(valid_index);
+            all_train_start_index = find(train_index,1);
+            valid_start_index = find(valid_index,1);
+            all_train_end_index = valid_start_index+valid_n-1;
+            all_train_middle_index = all_train_start_index+ceil((train_n+valid_n)/2)-1;
+            
+            test_index = strcmp(train_valid_test,'test');
+            test_n = sum(test_index);
+            test_start_index = find(test_index,1);
+            test_end_index = test_start_index+test_n-1;
+            test_middle_index = test_start_index+ceil(test_n/2)-1;
+            
+            new_train_index = [all_train_start_index:all_train_middle_index,test_start_index:test_middle_index];
+            new_val_index = new_train_index(end-valid_n+1:end);
+            new_test_index = [all_train_middle_index+1:all_train_end_index,test_middle_index+1:test_end_index];
+            
+            plot(new_train_index,new_train_index,'r*');hold on
+            plot(new_val_index,new_val_index,'g*');
+            plot(new_test_index,new_test_index,'b*');
+            line([all_train_end_index all_train_end_index], [0 test_end_index], 'Color', 'cyan', 'Linewidth', 2);
+            line([test_end_index test_end_index], [0 test_end_index], 'Color', 'magenta', 'Linewidth', 2);
+            legend({'Train', 'Valid', 'Test', 'Original Train End', 'Original Test End'});
+            xlabel('indices for yolo objects');
+            ylabel('indices for yolo objects');
+            grid on;
+            
+            new_train_valid_test = train_valid_test;
+            for i=1:length(new_train_index)
+                new_train_valid_test{new_train_index(i)} = 'train';
+            end
+            for i=1:length(new_val_index)
+                new_train_valid_test{new_val_index(i)} = 'valid';
+            end
+            for i=1:length(new_test_index)
+                new_train_valid_test{new_test_index(i)} = 'test';
+            end
+            
+        end
+        
         function [X_train, X_val, X_test, ...
                   frames_train, frames_val, frames_test, ...
                   image_paths_train, image_paths_val, image_paths_test, ...
                   coords_train, coords_val, coords_test, ...
-                  y_train, y_val, y_test] = train_val_test_split(X, y, frames, image_paths, coords, val_size, test_size)
-            
-            if (nargin<3) || (val_size>=1) || (test_size>=1)
-                val_size = 0.15;
-                test_size = 0.15;
-            end
-            
-            N = length(y);
-            shuffle_index = randperm(N);
-            X = X(shuffle_index, :);                                       % shuffle the data
-            y = y(shuffle_index, :);                                       % shuffle the data
-            frames = frames(shuffle_index, :);                             % shuffle the data
-            image_paths = image_paths(shuffle_index, :);                   % shuffle the data
-            coords = coords(shuffle_index, :);                             % shuffle the data
-            
-            val_N = round(N*val_size);
-            test_N = round(N*test_size);
-            train_index = 1:N-(val_N+test_N);
-            val_index = N-(val_N+test_N)+1:N-test_N;
-            test_index = N-test_N+1:N;
+                  y_train, y_val, y_test] = train_val_test_split(X, y, train_valid_test, frames, image_paths, coords)
+
+            % get the indices
+            train_index = strcmp(train_valid_test,'train');
+            val_index = strcmp(train_valid_test,'valid');
+            test_index = strcmp(train_valid_test,'test');
             
             X_train = X(train_index, :);
             frames_train = frames(train_index, :);
@@ -77,6 +108,12 @@ classdef utility_functions
                 augmented_y = y;
             end
 
+            % add final shuffle to training
+            shuffle_end = randperm(length(augmented_y));
+            augmented_x = augmented_x(shuffle_end, :);
+            augmented_coords = augmented_coords(shuffle_end, :);
+            augmented_y = augmented_y(shuffle_end, :);
+            
         end
         
         % derivative of sigmoid function

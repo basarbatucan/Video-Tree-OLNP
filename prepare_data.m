@@ -4,6 +4,9 @@ clc
 
 % parameters
 video_set_name = 'UCSDped2_dae.mat';
+%video_set_name = 'SUrveillance_dae.mat';
+%video_set_name = 'UCSDped1_dae.mat';
+%video_set_name = 'ShangaiTech_dae.mat';
 alpha = 0.25;
 
 % read raw data
@@ -25,6 +28,7 @@ object_coords(:,1) = data.xmin';
 object_coords(:,2) = data.ymin';
 object_coords(:,3) = data.xmax';
 object_coords(:,4) = data.ymax';
+train_valid_test = data.train_valid_test';
 frame_n = data.frame_n';
 image_paths = data.ori_im_path';
 
@@ -41,14 +45,6 @@ anomaly_index = y>alpha;
 y(anomaly_index) = 1;
 y(~anomaly_index) = -1;
 
-% shuffle data
-shuffle_index = randperm(N);
-x = x(shuffle_index, :);
-y = y(shuffle_index);
-frame_n = frame_n(shuffle_index);
-image_paths = image_paths(shuffle_index);
-object_coords = object_coords(shuffle_index, :);
-
 % save all files to mat
 save(['./data/processed/',video_set_name], 'x', 'y', '-v7.3');
-save(['./data/processed/meta_',video_set_name], 'frame_n', 'image_paths', 'object_coords', '-v7.3');
+save(['./data/processed/meta_',video_set_name], 'frame_n', 'image_paths', 'object_coords', 'train_valid_test','-v7.3');

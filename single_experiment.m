@@ -4,9 +4,7 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
     video_set_name = sprintf('%s_dae.mat', data_name);
     input_data_dir = ['./data/processed/',video_set_name];
     input_meta_data_dir = ['./data/processed/meta_',video_set_name];
-
-    val_size = 0.15;
-    test_size = 0.15;
+    
     augmentation_size = 150e3;
     cross_val_MC = 8;
     %x and y scales
@@ -17,15 +15,15 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
     [max_y, max_x, ~] = size(tmp_im);
 
     % Define model hyper-parameter space
-    hyperparams.eta_init = 0.01;
-    hyperparams.beta_init = [1e2, 1e3];
+    hyperparams.eta_init = 0.03;
+    hyperparams.beta_init = [1e2];
     hyperparams.gamma = 1;
-    hyperparams.sigmoid_h = -1;
+    hyperparams.sigmoid_h = -2;
     hyperparams.lambda = 0;
-    hyperparams.tree_depth = [4, 5, 6, 7];
+    hyperparams.tree_depth = [7];
     hyperparams.split_prob = 0.5;
-    %hyperparams.node_loss_constant = [1e-1, 1];
-    hyperparams.node_loss_constant = [1e-2, 1e-1]; % decrease constants by 10 if tree convergence fails
+    hyperparams.node_loss_constant = [1];
+    %hyperparams.node_loss_constant = [1e-1]; % decrease constants by 10 if tree convergence fails
 
     % generate hyper-parameter space 
     hyperparam_space = utility_functions.generate_hyperparameter_space_Video_Tree_OLNP(hyperparams);
@@ -35,17 +33,31 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
     % Read Data
     data = load(input_data_dir);
     meta_data = load(input_meta_data_dir);
+    
+    % update train test validation for NP formulation
+    figure;
+    subplot(2,1,1);
+    plot(data.y,'k');
+    ylabel('anomaly label');
+    xlabel('indices for yolo objects');
+    grid on;
+    subplot(2,1,2);
+    new_train_valid_test = utility_functions.update_train_valid_test(meta_data.train_valid_test);
+    
     [X_train, X_val, X_test, ...
      frames_train, frames_val, frames_test, ...
      image_paths_train, image_paths_val, image_paths_test, ...
      coords_train, coords_val, coords_test, ...
-     y_train, y_val, y_test] = utility_functions.train_val_test_split(data.x, data.y, meta_data.frame_n, meta_data.image_paths, meta_data.object_coords, val_size, test_size);
+     y_train, y_val, y_test] = utility_functions.train_val_test_split(data.x, data.y, new_train_valid_test, meta_data.frame_n, meta_data.image_paths, meta_data.object_coords);
     n_features = size(X_train, 2);
-
+    
+    close all;
+    
     % cross validation
     if isempty(optimized_params)
         
-        if (hyperparam_number>1)
+        % cross validation
+        if hyperparam_number>1
 
             % force hyperparameter tuning
             X_train_ = X_train;
@@ -104,14 +116,14 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
                 fprintf('Time elapsed for testing hyperparameter set %d: %.3f\n', i, tuning_tend);
                 
             end
-
+            
             % make decision based on mean of the NP scores
             cross_val_scores_ = mean(cross_val_scores);
-
+            
             % find out the best hyperparameter set
             % for NP score, lesser is better
             [~, target_hyperparameter_index] = min(cross_val_scores_);
-
+            
             % select optimum hyperparameters
             eta_init = hyperparam_space{target_hyperparameter_index}.eta_init;
             beta_init = hyperparam_space{target_hyperparameter_index}.beta_init;
@@ -121,9 +133,9 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
             tree_depth = hyperparam_space{target_hyperparameter_index}.tree_depth;
             split_prob = hyperparam_space{target_hyperparameter_index}.split_prob;
             node_loss_constant = hyperparam_space{target_hyperparameter_index}.node_loss_constant;
-
+            
         else
-
+            
             % there is only one hyperparameter defined
             eta_init = hyperparam_space{1}.eta_init;
             beta_init = hyperparam_space{1}.beta_init;
@@ -133,12 +145,12 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
             tree_depth = hyperparam_space{1}.tree_depth;
             split_prob = hyperparam_space{1}.split_prob;
             node_loss_constant = hyperparam_space{1}.node_loss_constant;
-
+            
         end
         
         % load the model (this case is only used to save the parameters)
         model = Video_Tree_OLNP(eta_init, beta_init, gamma, sigmoid_h, lambda, tree_depth, split_prob, node_loss_constant, n_features, tfpr, max_x, max_y);
-
+        
     else
         
         % model is already optimized
@@ -171,7 +183,7 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
         model = model.train(X_train, coords_train, y_train, X_test, coords_test, y_test, test_repeat);
 
         % plot the results
-        %model.plot_results();
+        model.plot_results();
     
     end
 
