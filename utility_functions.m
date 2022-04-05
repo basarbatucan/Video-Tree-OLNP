@@ -3,48 +3,150 @@ classdef utility_functions
     methods (Static)
         
         % common functions
-        function [new_train_valid_test] = update_train_valid_test(train_valid_test)
+        function [new_train_valid_test] = update_train_valid_test(train_valid_test, y_ori)
+            
+            % get all index
+            N = length(train_valid_test);
             
             % get the indices
             train_index = strcmp(train_valid_test,'train');
             valid_index = strcmp(train_valid_test,'valid');
+            test_index = strcmp(train_valid_test,'test');
+            
+            % original sizes
             train_n = sum(train_index);
             valid_n = sum(valid_index);
-            all_train_start_index = find(train_index,1);
-            valid_start_index = find(valid_index,1);
-            all_train_end_index = valid_start_index+valid_n-1;
-            all_train_middle_index = all_train_start_index+ceil((train_n+valid_n)/2)-1;
-            
-            test_index = strcmp(train_valid_test,'test');
             test_n = sum(test_index);
+            
+            % original starting points
+            train_start_index = find(train_index,1);
+            valid_start_index = find(valid_index,1);
             test_start_index = find(test_index,1);
+            
+            % original ending points
+            train_end_index = train_n;
+            valid_end_index = valid_start_index+valid_n-1;
             test_end_index = test_start_index+test_n-1;
+            
+            % find middle points
+            train_valid_middle_index = train_start_index+ceil((train_n+valid_n)/2)-1;
             test_middle_index = test_start_index+ceil(test_n/2)-1;
             
-            new_train_index = [all_train_start_index:all_train_middle_index,test_start_index:test_middle_index];
-            new_val_index = new_train_index(end-valid_n+1:end);
-            new_test_index = [all_train_middle_index+1:all_train_end_index,test_middle_index+1:test_end_index];
+            % define ones
+            index = 1:N;
+            value = zeros(1,N);
             
-            plot(new_train_index,new_train_index,'r*');hold on
-            plot(new_val_index,new_val_index,'g*');
-            plot(new_test_index,new_test_index,'b*');
-            line([all_train_end_index all_train_end_index], [0 test_end_index], 'Color', 'cyan', 'Linewidth', 2);
-            line([test_end_index test_end_index], [0 test_end_index], 'Color', 'magenta', 'Linewidth', 2);
-            legend({'Train', 'Valid', 'Test', 'Original Train End', 'Original Test End'});
-            xlabel('indices for yolo objects');
-            ylabel('indices for yolo objects');
-            grid on;
+            % save old indices
+            old_train_index = train_start_index:train_end_index;
+            old_train_value = value;
+            old_train_value(old_train_index)=1;
+            old_valid_index = valid_start_index:valid_end_index;
+            old_valid_value = value;
+            old_valid_value(old_valid_index)=1;
+            old_test_index = test_start_index:test_end_index;
+            old_test_value = value;
+            old_test_value(old_test_index)=1;
+            
+            % assign new indices
+            new_train_index = [train_start_index:train_valid_middle_index,test_start_index:test_middle_index];
+            new_train_value = value;
+            new_train_value(new_train_index)=1;
+            new_valid_index = new_train_index(end-valid_n+1:end);
+            new_valid_value = value;
+            new_valid_value(new_valid_index)=1;
+            new_test_index = [train_valid_middle_index+1:valid_end_index,test_middle_index+1:test_end_index];
+            new_test_value = value;
+            new_test_value(new_test_index)=1;
             
             new_train_valid_test = train_valid_test;
             for i=1:length(new_train_index)
                 new_train_valid_test{new_train_index(i)} = 'train';
             end
-            for i=1:length(new_val_index)
-                new_train_valid_test{new_val_index(i)} = 'valid';
+            for i=1:length(new_valid_index)
+                new_train_valid_test{new_valid_index(i)} = 'valid';
             end
             for i=1:length(new_test_index)
                 new_train_valid_test{new_test_index(i)} = 'test';
             end
+            
+            % plot changed indices
+            figure;
+            subplot(3,1,1);
+            plot(y_ori,'k');
+            title('Original Train Test, Label');
+            ylabel('anomaly label');
+            xlabel('indices for yolo objects');
+            grid on;
+            subplot(3,1,2);
+            area(index, old_train_value, 'FaceColor', 'r');hold on;
+            area(index, old_valid_value, 'FaceColor', 'g');
+            area(index, old_test_value, 'FaceColor', 'b');
+            title('Train Valid Test for Denoising AE');
+            xlabel('indices for yolo objects');
+            legend({'Train', 'Valid', 'Test'});
+            subplot(3,1,3);
+            area(index, new_train_value, 'FaceColor', 'r');hold on;
+            area(index, new_valid_value, 'FaceColor', 'g');
+            area(index, new_test_value, 'FaceColor', 'b');
+            title('Train Valid Test for NP Framework');
+            xlabel('indices for yolo objects');
+            legend({'Train', 'Valid', 'Test'});
+            
+            % plot class distributions in test train and valid
+            figure;
+            hc = histcounts(y_ori);
+            hc = hc(hc>0);
+            b = bar(hc);grid on;
+            s = compose('%.1f%%', hc / sum(hc) * 100);
+            yOffset = round(max(b.YEndPoints)/30); % tweat, as necessary
+            text(b.XData, b.YEndPoints + yOffset, s);
+            xticklabels({'-1','1'});
+            ylabel('Number of Yolo Objects');
+            title('All data');
+            
+            figure;
+            y_ori_train = y_ori(new_train_value==1);
+            y_ori_valid = y_ori(new_valid_value==1);
+            y_ori_test = y_ori(new_test_value==1);
+            
+            subplot(1,3,1);
+            hc = histcounts(y_ori_train);
+            hc = hc(hc>0);
+            b = bar(hc);grid on;
+            s = compose('%.1f%%', hc / sum(hc) * 100);
+            yOffset = sum(hc)*0.01; % tweat, as necessary
+            xticklabels({'-1','1'});
+            text(b.XData, b.YEndPoints + yOffset,s);
+            title('Train');
+            ylabel('Number of Yolo Objects');
+            xlabel('new\_label');
+            grid on
+            
+            subplot(1,3,2);
+            hc = histcounts(y_ori_valid);
+            hc = hc(hc>0);
+            b = bar(hc);grid on;
+            s = compose('%.1f%%', hc / sum(hc) * 100);
+            yOffset = sum(hc)*0.01; % tweat, as necessary
+            xticklabels({'-1','1'});
+            text(b.XData, b.YEndPoints + yOffset,s);
+            title('Validation');
+            ylabel('Number of Yolo Objects');
+            xlabel('new\_label');
+            grid on
+            
+            subplot(1,3,3);
+            hc = histcounts(y_ori_test);
+            hc = hc(hc>0);
+            b = bar(hc);grid on;
+            s = compose('%.1f%%', hc / sum(hc) * 100);
+            yOffset = sum(hc)*0.01; % tweat, as necessary
+            xticklabels({'-1','1'});
+            text(b.XData, b.YEndPoints + yOffset,s);
+            title('Test');
+            ylabel('Number of Yolo Objects');
+            xlabel('new\_label');
+            grid on
             
         end
         

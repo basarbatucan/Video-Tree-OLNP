@@ -15,14 +15,14 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
     [max_y, max_x, ~] = size(tmp_im);
 
     % Define model hyper-parameter space
-    hyperparams.eta_init = 0.03;
-    hyperparams.beta_init = [1e2];
+    hyperparams.eta_init = 0.05;
+    hyperparams.beta_init = [5e2];
     hyperparams.gamma = 1;
     hyperparams.sigmoid_h = -2;
     hyperparams.lambda = 0;
-    hyperparams.tree_depth = [7];
+    hyperparams.tree_depth = [8];
     hyperparams.split_prob = 0.5;
-    hyperparams.node_loss_constant = [1];
+    hyperparams.node_loss_constant = [2];
     %hyperparams.node_loss_constant = [1e-1]; % decrease constants by 10 if tree convergence fails
 
     % generate hyper-parameter space 
@@ -35,14 +35,7 @@ function model = single_experiment(tfpr, data_name, test_repeat, optimized_param
     meta_data = load(input_meta_data_dir);
     
     % update train test validation for NP formulation
-    figure;
-    subplot(2,1,1);
-    plot(data.y,'k');
-    ylabel('anomaly label');
-    xlabel('indices for yolo objects');
-    grid on;
-    subplot(2,1,2);
-    new_train_valid_test = utility_functions.update_train_valid_test(meta_data.train_valid_test);
+    new_train_valid_test = utility_functions.update_train_valid_test(meta_data.train_valid_test, data.y);
     
     [X_train, X_val, X_test, ...
      frames_train, frames_val, frames_test, ...
