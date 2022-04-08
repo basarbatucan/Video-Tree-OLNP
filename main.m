@@ -12,7 +12,6 @@ data_name = 'UCSDped2';
 %data_name = 'UCSDped1';
 %data_name = 'ShangaiTech';
 
-
 out_data = sprintf('./output/%s/res_%03d.mat', data_name, tfpr_index);
 out_hyper = sprintf('./output/%s/res_hyper_%03d.mat', data_name, tfpr_index);
 
