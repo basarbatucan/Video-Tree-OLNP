@@ -7,7 +7,7 @@ video_set_name = 'UCSDped2_dae.mat';
 %video_set_name = 'SUrveillance_dae.mat';
 %video_set_name = 'UCSDped1_dae.mat';
 %video_set_name = 'ShangaiTech_dae.mat';
-alpha = 0.25;
+alpha = 0.65;
 
 % read raw data
 data = load(['./data/raw/',video_set_name]);

@@ -48,13 +48,22 @@ classdef utility_functions
             old_test_value(old_test_index)=1;
             
             % assign new indices
-            new_train_index = [train_start_index:train_valid_middle_index,test_start_index:test_middle_index];
+%             new_train_index = [train_start_index:train_valid_middle_index,test_start_index:test_middle_index];
+%             new_train_value = value;
+%             new_train_value(new_train_index)=1;
+%             new_valid_index = new_train_index(end-valid_n+1:end);
+%             new_valid_value = value;
+%             new_valid_value(new_valid_index)=1;
+%             new_test_index = [train_valid_middle_index+1:valid_end_index,test_middle_index+1:test_end_index];
+%             new_test_value = value;
+%             new_test_value(new_test_index)=1;
+            new_train_index = [train_valid_middle_index+1:valid_end_index,test_middle_index+1:test_end_index];
             new_train_value = value;
             new_train_value(new_train_index)=1;
             new_valid_index = new_train_index(end-valid_n+1:end);
             new_valid_value = value;
             new_valid_value(new_valid_index)=1;
-            new_test_index = [train_valid_middle_index+1:valid_end_index,test_middle_index+1:test_end_index];
+            new_test_index = [train_start_index:train_valid_middle_index,test_start_index:test_middle_index];
             new_test_value = value;
             new_test_value(new_test_index)=1;
             

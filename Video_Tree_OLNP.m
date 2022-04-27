@@ -256,7 +256,7 @@ classdef Video_Tree_OLNP
                             C__(dark_node_index) = sign(y_discriminant__single);
                         end
                         % probabilistic ensemble
-                        yt_predict_index = dark_node_indices(find(rand<cumsum(mu_tree),1,'first'));
+                        yt_predict_index = dark_node_indices(find(rand<cumsum(mu_tree__),1,'first'));
                         y_predict_tmp(j) = C__(yt_predict_index);
                     end
 
